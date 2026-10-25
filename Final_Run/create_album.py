@@ -2,12 +2,44 @@ from playwright.sync_api import sync_playwright
 import time
 
 
+
 # ============================================================
 # SETTINGS
 # ============================================================
 
-TARGET_COUNT = 2000
+def get_target_count():
+    while True:
+        value = input("Enter the number of media to select (1-20000): ")
 
+        # 1. Check if the input is a valid whole number
+        try:
+            target_count = int(value)
+        except ValueError:
+            print("Invalid input. Please enter a number using digits only.")
+            continue
+
+        # 2. Check if the number is within the range (1 to 20,000)
+        if not (1 <= target_count <= 20000):
+            print("Number out of range! Please enter a value between 1 and 20,000.")
+            continue
+
+        # Valid input reached
+        return target_count
+
+
+def get_album_name():
+
+    while True:
+        album_name = input("Enter the new album name: ").strip()
+
+        if album_name:
+            return album_name
+
+        print("Album name cannot be empty.")
+
+
+TARGET_COUNT = get_target_count()
+ALBUM_NAME = get_album_name()
 # Move 40% of viewport each time.
 # This gives us overlap and reduces skipped media.
 SCROLL_RATIO = 0.40
@@ -56,6 +88,73 @@ def connect_to_photos(p):
     page.bring_to_front()
 
     return browser, page
+
+
+def create_album_from_selection(page, album_name):
+
+    plus_button = page.get_by_role(
+        "button",
+        name="Create or add to album",
+        exact=True
+    )
+
+    if plus_button.count() != 1 or not plus_button.is_visible():
+        raise RuntimeError(
+            "Expected exactly one visible 'Create or add to album' button."
+        )
+
+    plus_button.click(timeout=5000)
+
+    album_menu_item = page.get_by_role(
+        "menuitem",
+        name="Album",
+        exact=True
+    )
+
+    album_menu_item.wait_for(state="visible", timeout=5000)
+
+    if album_menu_item.count() != 1:
+        raise RuntimeError("Expected one 'Album' menu item.")
+
+    album_menu_item.click(timeout=5000)
+
+    new_album_option = page.get_by_role(
+        "option",
+        name="New album",
+        exact=True
+    )
+
+    new_album_option.wait_for(state="visible", timeout=5000)
+
+    if new_album_option.count() != 1:
+        raise RuntimeError("Expected one 'New album' option.")
+
+    new_album_option.click(timeout=5000)
+
+    name_input = page.get_by_role(
+        "textbox",
+        name="Edit album name",
+        exact=True
+    )
+
+    name_input.wait_for(state="visible", timeout=10000)
+
+    if name_input.count() != 1:
+        raise RuntimeError("Expected one album name field.")
+
+    name_input.fill(album_name)
+
+    done_button = page.get_by_role(
+        "button",
+        name="Done",
+        exact=True
+    )
+
+    if done_button.count() != 1 or not done_button.is_visible():
+        raise RuntimeError("Expected one visible 'Done' button.")
+
+    done_button.click(timeout=5000)
+    print(f"Created album '{album_name}'.")
 
 
 # ============================================================
@@ -927,41 +1026,10 @@ with sync_playwright() as p:
             last_selected
         )
 
-    print(
-        "\n================================"
-    )
-
-    print(
-        "NOTHING ELSE WAS DONE"
-    )
-
-    print(
-        "================================"
-    )
-
-    print(
-        "Selections remain selected."
-    )
-
-    print(
-        "No deselection."
-    )
-
-    print(
-        "No album."
-    )
-
-    print(
-        "No deletion."
-    )
-
-    print(
-        "No download."
-    )
-
-    print(
-        "No sharing."
-    )
+    if selected_count >= TARGET_COUNT:
+        create_album_from_selection(page, ALBUM_NAME)
+    else:
+        print("Target count was not reached; album was not created.")
 
     input(
         "\nPress ENTER to finish..."

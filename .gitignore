@@ -88,3 +88,6 @@ target/
 
 # Virtual environment
 .venv/
+
+# file
+things_to_add.txt
