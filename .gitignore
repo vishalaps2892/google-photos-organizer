@@ -91,3 +91,6 @@ target/
 
 # file
 things_to_add.txt
+
+# Local experiments and test cases
+Hit_And_Trail/
